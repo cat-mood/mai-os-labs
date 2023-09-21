@@ -9,8 +9,8 @@ int main() {
         }
         write(STDOUT_FILENO, &c, sizeof(c));
     }
-    close(0);
-    close(1);
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
 
     return 0;
 }
