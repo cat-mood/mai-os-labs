@@ -3,99 +3,82 @@
 #include <string>
 #include <cctype>
 
+int create_process() {
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("Fork error!\n");
+        exit(-1);
+    }
+    return pid;
+}
+
+void create_pipe(int* pipe_fd) {
+    if (pipe(pipe_fd) == -1) {
+        perror("Pipe error!\n");
+        exit(-1);
+    }
+}
+
+void dup_fd(int oldfd, int newfd) {
+    if (dup2(oldfd, newfd) == -1) {
+        perror("dup2 error!\n");
+        exit(-1);
+    }
+}
+
 int main() {
-    int pipe1_fd[2], pipe2_fd[2], pipe3_fd[2];
-    if (pipe(pipe1_fd) == -1) {
-        perror("Pipe error!\n");
-        return -1;
-    }
-    if (pipe(pipe2_fd) == -1) {
-        perror("Pipe error!\n");
-        return -1;
-    }
-    if (pipe(pipe3_fd) == -1) {
-        perror("Pipe error!\n");
-        return -1;
-    }
-    pid_t child1 = fork();
-    if (child1 == -1) {
-        perror("Fork error!\n");
-        return -1;
-    }
-    pid_t child2 = fork();
-    if (child2 == -1) {
-        perror("Fork error!\n");
-        return -1;
-    }
+    int pipe1_fd[2], pipe2_fd[2];   // pipe1 - from parent to child1, pipe2 - from child2 to parent
+    create_pipe(pipe1_fd);
+    create_pipe(pipe2_fd);
+
+    pid_t child1 = create_process();
     if (child1 == 0) {
         close(pipe1_fd[1]);
         close(pipe2_fd[0]);
-        close(pipe3_fd[0]);
-        close(pipe3_fd[1]);
-        std::string s;
-        int err_read = read(pipe1_fd[0], &s, sizeof(s));
-        while (err_read != 0) {
-            if (err_read == -1) {
-                perror("Read error!");
-                return -1;
-            }
-            for (char & c : s) {
-                c = toupper(c);
-            }
-            if (write(pipe2_fd[1], &s, sizeof(s)) == -1) {
-                perror("Write error!\n");
-                return -1;
-            }
-            err_read = read(pipe1_fd[0], &s, sizeof(s));
+
+        int pipech_fd[2];
+        create_pipe(pipech_fd);
+
+        pid_t child2 = create_process();
+
+        if (child2 == 0) { // child2
+            close(pipech_fd[0]);
+            close(pipe2_fd[1]);
+
+            dup_fd(pipe1_fd[0], STDIN_FILENO);
+            dup_fd(pipech_fd[1], STDOUT_FILENO);
+
+            execl("../build/child2", "../build/child2", NULL);
+
+            close(pipech_fd[1]);
+            close(pipe1_fd[0]);
+        } else {    // child1
+            close(pipe1_fd[0]);
+            close(pipech_fd[1]);
+
+            dup_fd(pipech_fd[0], STDIN_FILENO);
+            dup_fd(pipe2_fd[1], STDOUT_FILENO);
+
+            execl("../build/child1", "../build/child1", NULL);
+
+            close(pipe1_fd[0]);
+            close(pipe2_fd[1]);
         }
+    } else {    // parent
         close(pipe1_fd[0]);
         close(pipe2_fd[1]);
-    } else if (child2 == 0) {
-        close(pipe1_fd[0]);
-        close(pipe1_fd[1]);
-        close(pipe2_fd[1]);
-        close(pipe3_fd[0]);
-        std::string s;
-        int err_read = read(pipe2_fd[0], &s, sizeof(s));
-        while (err_read != 0) {
-            if (err_read == -1) {
-                perror("Read error!");
-                return -1;
-            }
-            for (char & c : s) {
-                if (c == ' ') {
-                    c = '_';
-                }
-            }
-            if (write(pipe3_fd[1], &s, sizeof(s)) == -1) {
-                perror("Write error!\n");
-                return -1;
-            }
-            err_read = read(pipe2_fd[0], &s, sizeof(s));
+        char c = getchar();
+        while (c != EOF) {
+            write(pipe1_fd[1], &c, sizeof(c));
+            read(pipe2_fd[0], &c, sizeof(c));
+
+            putchar(c);
+
+            c = getchar();
         }
-        close(pipe3_fd[1]);
-        close(pipe2_fd[0]);
-    } else {
-        close(pipe1_fd[0]);
-        close(pipe2_fd[0]);
-        close(pipe2_fd[1]);
-        close(pipe3_fd[1]);
-        std::string s;
-        do {
-            std::cout << "Input string: ";
-            std::getline(std::cin, s);
-            if (write(pipe1_fd[1], &s, sizeof(s)) == -1) {
-                perror("Write error!\n");
-                return -1;
-            }
-            if (read(pipe3_fd[0], &s, sizeof(s)) == -1) {
-                perror("Read error!");
-                return -1;
-            }
-            std::cout << "Result: " << s << std::endl;
-        } while (s != "");
+
         close(pipe1_fd[1]);
-        close(pipe3_fd[0]);
+        close(pipe2_fd[0]);
     }
     
     return 0;
