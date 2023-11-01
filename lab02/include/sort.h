@@ -1,10 +1,14 @@
 #pragma once
+#include "threadscount.h"
+#include <string>
 
 struct Piece{
     int* mas;
     int start;
     int end;
-    int threads;
+    ThreadsCount* threads;
+    std::string buf;
 };
 
 void parallel_quick_sort(Piece p);
+void* sort(void* arg);

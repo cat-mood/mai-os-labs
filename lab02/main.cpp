@@ -1,4 +1,5 @@
 #include "sort.h"
+#include "threadscount.h"
 #include <iostream>
 #include <chrono>
 
@@ -17,16 +18,13 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < n; ++i) {
         std::cin >> mas[i];
     }
-    Piece p = {mas, 0, n - 1, atoi(argv[1])};
-    system_clock::time_point start = system_clock::now();
-    parallel_quick_sort(p);
-    system_clock::time_point end = system_clock::now();
+    ThreadsCount threads(atoi(argv[1]));
+    Piece p = {mas, 0, n - 1, &threads};
+    auto start = std::chrono::high_resolution_clock::now();
+    sort(&p);
+    auto end = std::chrono::high_resolution_clock::now();
     duration<double> sec = end - start;
     std::cout << "Result: ";
-    for (int i = 0; i < n; ++i) {
-        std::cout << mas[i] << ' ';
-    }
-    std::cout << std::endl;
     std::cout << sec.count() << " s" << std::endl;
 
     return 0;
