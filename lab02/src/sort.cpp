@@ -10,7 +10,7 @@ void create_thread(pthread_t* thread, const pthread_attr_t* attr, void *(*start)
     }
 }
 
-void* sort(void* arg) {
+void* thread_sort(void* arg) {
     Piece* p = (Piece*) arg;
     int i = p->start;
     int j = p->end;
@@ -31,27 +31,38 @@ void* sort(void* arg) {
         }
     } while (i <= j);
     if (p->start < j) {
-        Piece less = {p->mas, p->start, j, p->threads};
-        if (p->threads->get_count() == 1 || p->threads->get_count() % 2 == 0) {
-            sort(&less);
-        } else {
-            --*p->threads;
-            pthread_t thread;
-            create_thread(&thread, NULL, sort, &less);
-            pthread_join(thread, NULL);
-        }
+        Piece less = {p->mas, p->start, j};
+        thread_sort(&less);
     }
     if (i < p->end) {
-        Piece more = {p->mas, i, p->end, p->threads};
-        if (p->threads->get_count() == 1 || p->threads->get_count() % 2 == 1) {
-            sort(&more);
-        } else {
-            --*p->threads;
-            pthread_t thread;
-            create_thread(&thread, NULL, sort, &more);
-            pthread_join(thread, NULL);
-        }
+        Piece more = {p->mas, i, p->end};
+        thread_sort(&more);
     }
 
     return 0;
+}
+
+void sort(int* array, int n, int threads) {
+    Piece p[threads];
+    pthread_t tid[threads];
+    for (int i = 0; i < threads; ++i) {
+        int* array_piece = new int[n / threads];
+        int counter = 0;
+        for (int j = i * (n / threads); j < (i + 1) * (n / threads); ++j) {
+            array_piece[counter] = array[j];
+            ++counter;
+        }
+        p[i] = Piece{array_piece, 0, n / threads - 1};
+        create_thread(&tid[i], NULL, thread_sort, &p[i]);
+    }
+    for (int i = 0; i < threads; ++i) {
+        pthread_join(tid[i], NULL);
+    }
+    for (int i = 0; i < threads; ++i) {
+        int counter = 0;
+        for (int j = i * (n / threads); j < (i + 1) * (n / threads); ++j) {
+            array[j] = p[i].mas[counter];
+            ++counter;
+        }
+    }
 }

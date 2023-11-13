@@ -18,10 +18,9 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < n; ++i) {
         std::cin >> mas[i];
     }
-    ThreadsCount threads(atoi(argv[1]));
-    Piece p = {mas, 0, n - 1, &threads};
+    int threads(atoi(argv[1]));
     auto start = std::chrono::high_resolution_clock::now();
-    sort(&p);
+    sort(mas, n, threads);
     auto end = std::chrono::high_resolution_clock::now();
     duration<double> sec = end - start;
     std::cout << "Result: ";
