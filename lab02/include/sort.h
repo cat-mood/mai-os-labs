@@ -1,9 +1,12 @@
 #pragma once
 
+#include <memory>
+
 struct Piece{
-    int* mas;
+    std::shared_ptr<int[]> mas;
+    int size;
     int start;
     int end;
 };
 
-void sort(int* array, int n, int threads);
+void sort(std::shared_ptr<int[]> array, int n, int threads);

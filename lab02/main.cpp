@@ -2,6 +2,7 @@
 #include "threadscount.h"
 #include <iostream>
 #include <chrono>
+#include <memory>
 
 using namespace std::chrono;
 
@@ -13,7 +14,7 @@ int main(int argc, char* argv[]) {
     int n;
     std::cout << "Enter the number of elements: ";
     std::cin >> n;
-    int mas[n];
+    std::shared_ptr<int[]> mas = std::make_shared<int[]>(n);
     std::cout << "Fill array: ";
     for (int i = 0; i < n; ++i) {
         std::cin >> mas[i];
