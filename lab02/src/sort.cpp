@@ -42,6 +42,31 @@ void* thread_sort(void* arg) {
     return 0;
 }
 
+int* merge(int* a, size_t size_a, int* b, size_t size_b) {
+    size_t size_res = size_a + size_b;
+    int* res = new int[size_res];
+    int i = 0, j = 0, k = 0;
+    while (i < size_a || j < size_b) {
+        if (i >= size_a) {
+            res[k] = b[j];
+            ++j;
+        } else if (j >= size_b) {
+            res[k] = a[i];
+            ++i;
+        } else {
+            if (a[i] < b[j]) {
+                res[k] = a[i];
+                ++i;
+            } else {
+                res[k] = b[j];
+                ++j;
+            }
+        }
+        ++k;
+    }
+    return res;
+}
+
 void sort(int* array, int n, int threads) {
     Piece p[threads];
     pthread_t tid[threads];
@@ -64,5 +89,16 @@ void sort(int* array, int n, int threads) {
             array[j] = p[i].mas[counter];
             ++counter;
         }
+    }
+    // Piece res = Piece{array, 0, n - 1};
+    // thread_sort(&res);
+    int* res = new int[0];
+    size_t res_size = 0;
+    for (int i = 0; i < threads; ++i) {
+        res = merge(res, res_size, p[i].mas, n / threads);
+        res_size += n / threads;
+    }
+    for (int i = 0; i < n; ++i) {
+        array[i] = res[i];
     }
 }

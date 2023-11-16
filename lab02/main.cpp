@@ -25,6 +25,10 @@ int main(int argc, char* argv[]) {
     duration<double> sec = end - start;
     std::cout << "Result: ";
     std::cout << sec.count() << " s" << std::endl;
+    // for (int i = 0; i < n; ++i) {
+    //     std::cout << mas[i] << ' ';
+    // }
+    // std::cout << std::endl;
 
     return 0;
 }
