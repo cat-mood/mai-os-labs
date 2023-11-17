@@ -10,8 +10,12 @@ int create_process() {
     return pid;
 }
 
-int main() {
-    std::string mm_name("lab03");
+int main(int argc, char** argv) {
+    if (argc != 2) {
+        perror("Too few arguments. Usage: ./lab03 NAME_OF_FILE");
+        exit(1);
+    }
+    std::string mm_name(argv[1]);
     MemoryMap<char> mm(mm_name, sizeof(char)*MAX_LENGHT, M_WRITE | M_READ);
     char c = getchar();
     int i = 1;
