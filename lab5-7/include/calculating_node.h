@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <fstream>
 #include "message_type.h"
 
 namespace mysys {
@@ -15,10 +16,10 @@ namespace mysys {
         ~CalculatingNode() noexcept;
         void connect_child(int child_id);
         std::vector<int> ping_children();      // returns id of unavailable child
-        MyMessage get_child_msg(zmq::socket_t& child);
+        MyMessage get_child_msg(zmq::socket_t* child);
         MyMessage get_parent_msg();
         std::vector<int> exec(const std::string& text, const std::string& pattern);
-        void req(zmq::socket_t& child, const MyMessage& msg);
+        bool req(zmq::socket_t* child, const MyMessage& msg);
         void reply(const MyMessage& msg);
     private:
         zmq::context_t _context;
@@ -26,6 +27,8 @@ namespace mysys {
         std::map<int, zmq::socket_t*> _s_children;
         int _base_port;
         int _id;
+
+        std::ofstream file;
 
         void _msg_to_string(const zmq::message_t& msg, std::string& str);
     };

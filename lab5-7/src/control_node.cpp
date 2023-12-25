@@ -19,8 +19,10 @@ void concat(std::vector<Item> &a, std::vector<Item> &b) {
 }
 
 ControlNode::ControlNode(int base_port) : _base_port{base_port}, 
-    _s_request(_context, zmq::socket_type::pair) {
+    _s_request(_context, zmq::socket_type::pair), _has_child{false} {
     _s_request.set(zmq::sockopt::sndtimeo, 3000);
+    file.open("control_log.txt");
+    file << "test\n";
 }
 
 ControlNode::ControlNode(ControlNode&& other) noexcept {
@@ -39,9 +41,16 @@ pid_t ControlNode::new_node(int id) {
     if (pid == 0) {
         execl("./lab5-7_calc", "./lab5-7_calc", std::to_string(id).c_str(), std::to_string(_base_port).c_str());
     } else {
-        // need fix
-        std::string addr = "tcp://*:" + std::to_string(_base_port + id);
-        _s_request.bind(addr);
+        if (!_has_child) {
+            std::string addr = "tcp://*:" + std::to_string(_base_port + id);
+            _s_request.bind(addr);
+            _has_child = true;
+        } else {
+            MyMessage bind;
+            bind.type = MessageType::bind_node;
+            bind.text = std::to_string(id);
+            send_message(bind);
+        }
         return pid;
     }
 }
@@ -81,8 +90,7 @@ bool ControlNode::send_message(const MyMessage& msg) {
     zmq::message_t msg_type(std::to_string(msg.type));
     if (msg.type == MessageType::ping) {
         auto res = _s_request.send(msg_type, zmq::send_flags::dontwait);
-        std::cout << "DEBUG: " << (bool) res << std::endl;
-        if (!((bool) res)) return false;
+        if (!res) return false;
         return true;
     }
     _s_request.send(msg_type, zmq::send_flags::sndmore);
@@ -104,9 +112,13 @@ std::vector<int> ControlNode::pingall() {
     //     return ids;
     // }
     std::vector<int> ids = _string_to_vector(msg.text);
+    for (auto id : ids) {
+        file << id << ' ';
+    }
+    file.close();
     // if (ids[0] == -1 && ids.size() == 1) return ids;
     std::vector<int> tops;
-    for (auto el : tops) {
+    for (auto el : ids) {
         std::vector<int> children = _topology.get_children(el);
         concat<int>(tops, children);
     }

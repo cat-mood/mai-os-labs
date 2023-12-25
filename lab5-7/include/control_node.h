@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <vector>
 #include <string>
+#include <fstream>
 #include "message_type.h"
 #include "binary_tree.h"
 
@@ -24,6 +25,9 @@ namespace mysys {
         zmq::socket_t _s_request;
         int _base_port;
         BinaryTree<int> _topology;
+        bool _has_child;
+
+        std::ofstream file;
 
         std::vector<int> _string_to_vector(const std::string& str);
         void _msg_to_string(const zmq::message_t& msg, std::string& str);
