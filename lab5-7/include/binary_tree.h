@@ -2,6 +2,7 @@
 
 #include <compare>
 #include <stdexcept>
+#include <vector>
 
 namespace mysys {
     template <class T>
@@ -23,20 +24,17 @@ namespace mysys {
         }
 
         BinaryTree& operator=(const BinaryTree& rhs) {
-            _root = _copy_tree(rhs->_root);
+            _root = _copy_tree(rhs._root);
             return *this;
         }
 
         BinaryTree& operator=(BinaryTree&& rhs) noexcept {
-            _root = rhs->_root;
+            _root = rhs._root;
             return *this;
         }
 
-        // returns parent id
-        int insert(T key) {
-            _Node* parent = _insert(_root, nullptr, key);
-            if (parent == nullptr) return 0;
-            return parent->key;
+        void insert(T key) {
+            _root = _insert(_root, key);
         }
 
         bool search(T key) const {
@@ -47,11 +45,26 @@ namespace mysys {
             return true;
         }
 
-        // delete the node with all its children
-        void delete_node(T key) {
-            _Node* node = _search(_root, key);
-            if (node == nullptr) throw std::logic_error("Key not found");
-            _delete_tree(node);
+        // // delete the node with all its children
+        // void delete_node(T key) {
+        //     _Node* node = _search(_root, key);
+        //     if (node == nullptr) throw std::logic_error("Key not found");
+        //     _delete_tree(node);
+        // }
+
+        std::vector<T> get_tops() {
+            std::vector<T> tops;
+            _get_tops(_root, tops);
+            return tops;
+        }
+
+        std::vector<T> get_children(T key) {
+            _Node* found = _search(_root, key);
+            if (found == nullptr) throw std::logic_error("Key not found");
+            std::vector<T> tops;
+            _get_tops(found, tops);
+            tops.pop_back();
+            return tops;
         }
 
     private:
@@ -70,17 +83,16 @@ namespace mysys {
             return temp;
         }
         
-        // returns pointer to parent of new node
-        _Node* _insert(_Node* node, _Node* parent, T key) {
+        _Node* _insert(_Node* node, T key) {
             if (node == nullptr)
                 return _new_node(key);
 
             if (key < node->key)
-                node->left = _insert(node->left, node, key);
+                node->left = _insert(node->left, key);
             else if (key > node->key)
-                node->right = _insert(node->right, node, key);
+                node->right = _insert(node->right, key);
         
-            return parent;
+            return node;
         }
 
         void _delete_tree(_Node* node) noexcept {
@@ -107,14 +119,21 @@ namespace mysys {
             return root;
         }
 
-        _Node* _search(_Node* root, int key) {
+        _Node* _search(_Node* root, int key) const {
             if (root == nullptr || root->key == key)
                 return root;
 
             if (root->key < key)
-                return search(root->right, key);
+                return _search(root->right, key);
 
-            return search(root->left, key);
+            return _search(root->left, key);
+        }
+
+        void _get_tops(_Node* root, std::vector<T>& tops) {
+            if (root == nullptr) return;
+            _get_tops(root->left, tops);
+            _get_tops(root->right, tops);
+            tops.push_back(root->key);
         }
     };
 }

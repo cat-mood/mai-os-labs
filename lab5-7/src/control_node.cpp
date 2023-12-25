@@ -1,29 +1,114 @@
 #include "control_node.h"
+#include <iostream>
 
 using namespace mysys;
 
-ControlNode::ControlNode(int base_port) : _base_port{base_port}, 
-    _s_reply(_context, zmq::socket_type::rep) {
-    std::string addr = "tcp://*:" + std::to_string(_base_port);
-    _s_reply.bind(addr);
+void ControlNode::_msg_to_string(const zmq::message_t& msg, std::string& str) {
+    str.resize(msg.size() / sizeof(char));
+    std::memcpy(str.data(), msg.data(), msg.size());
 }
 
-ControlNode::ControlNode(const ControlNode& other) : 
-    ControlNode(other._base_port) {
-    _topology = other._topology;
+template<typename Item>
+void concat(std::vector<Item> &a, std::vector<Item> &b) {
+    a.reserve(a.size() + b.size());
+    a.insert(
+        a.end(),
+        std::make_move_iterator(b.begin()),
+        std::make_move_iterator(b.end())
+    );
+}
+
+ControlNode::ControlNode(int base_port) : _base_port{base_port}, 
+    _s_request(_context, zmq::socket_type::pair) {
+    _s_request.set(zmq::sockopt::sndtimeo, 3000);
 }
 
 ControlNode::ControlNode(ControlNode&& other) noexcept {
     _context = std::move(other._context);
-    _s_reply = std::move(other._s_reply);
+    _s_request = std::move(other._s_request);
     _base_port = std::move(other._base_port);
     _topology = std::move(other._topology);
 }
 
 ControlNode::~ControlNode() noexcept {}
 
-void ControlNode::new_node(int id) {
+pid_t ControlNode::new_node(int id) {
     if (id == 0) throw std::logic_error("id 0 is reserved for server");
-    int parent_id = _topology.insert(id);
-    // there will be a fork
+    _topology.insert(id);
+    pid_t pid = fork();
+    if (pid == 0) {
+        execl("./lab5-7_calc", "./lab5-7_calc", std::to_string(id).c_str(), std::to_string(_base_port).c_str());
+    } else {
+        // need fix
+        std::string addr = "tcp://*:" + std::to_string(_base_port + id);
+        _s_request.bind(addr);
+        return pid;
+    }
+}
+
+std::vector<int> ControlNode::_string_to_vector(const std::string& str) {
+    std::stringstream ss(str);
+    std::vector<int> vec;
+    int num;
+    while (ss >> num) {
+        vec.push_back(num);
+    }
+    return vec;
+}
+
+MyMessage ControlNode::get_message(zmq::recv_flags flags) {
+    MyMessage msg;
+    std::string buf;
+    zmq::message_t rec;
+    // _s_request.set(zmq::sockopt::rcvtimeo, 3000);
+    // std::cout << "DEBUG: " << _s_request.connected() << std::endl;
+    auto res = _s_request.recv(rec, flags);
+    // _s_request.set(zmq::sockopt::rcvtimeo, -1);
+    // if (*res == 0 || errno == EAGAIN) {
+    //     msg.type == MessageType::error;
+    //     std::cout << "Meow" << std::endl;
+    //     return msg;
+    // }
+    _msg_to_string(rec, buf);
+    msg.type = (MessageType) std::stoi(buf);
+    res = _s_request.recv(rec);
+    _msg_to_string(rec, buf);
+    msg.text = buf;
+    return msg;
+}
+
+bool ControlNode::send_message(const MyMessage& msg) {
+    zmq::message_t msg_type(std::to_string(msg.type));
+    if (msg.type == MessageType::ping) {
+        auto res = _s_request.send(msg_type, zmq::send_flags::dontwait);
+        std::cout << "DEBUG: " << (bool) res << std::endl;
+        if (!((bool) res)) return false;
+        return true;
+    }
+    _s_request.send(msg_type, zmq::send_flags::sndmore);
+    zmq::message_t msg_text(msg.text);
+    _s_request.send(msg_text, zmq::send_flags::none);
+    return true;
+}
+
+std::vector<int> ControlNode::pingall() {
+    MyMessage msg;
+    msg.type = MessageType::ping;
+    if (!send_message(msg)) {
+        std::vector<int> ids = _topology.get_tops();
+        return ids;
+    }
+    msg = get_message();
+    // if (msg.type == MessageType::error) {
+    //     std::vector<int> ids = _topology.get_tops();
+    //     return ids;
+    // }
+    std::vector<int> ids = _string_to_vector(msg.text);
+    // if (ids[0] == -1 && ids.size() == 1) return ids;
+    std::vector<int> tops;
+    for (auto el : tops) {
+        std::vector<int> children = _topology.get_children(el);
+        concat<int>(tops, children);
+    }
+    return tops;
 }
