@@ -79,7 +79,7 @@ MyMessage ControlNode::get_message(zmq::recv_flags flags) {
 
 bool ControlNode::send_message(const MyMessage& msg) {
     zmq::message_t msg_type(std::to_string(msg.type));
-    if (msg.type == MessageType::ping) {
+    if (msg.type == MessageType::ping || msg.type == MessageType::shutdown) {
         auto res = _s_request.send(msg_type, zmq::send_flags::dontwait);
         if (!res) return false;
         return true;

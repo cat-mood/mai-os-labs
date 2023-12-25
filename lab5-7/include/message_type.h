@@ -10,7 +10,8 @@ namespace mysys {
         bind_node,
         exec_result,
         ping_result,
-        error
+        error,
+        shutdown
     };
 
     struct MyMessage {

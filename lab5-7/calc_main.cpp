@@ -60,6 +60,12 @@ int main(int argc, char** argv) {
             next.type = MessageType::exec_result;
             next.text = msg.text;
             node.reply(next);
+        } else if (msg.type == MessageType::shutdown) {
+            MyMessage next;
+            next.type = MessageType::shutdown;
+            if (node.get_less_child() != nullptr) node.req(node.get_less_child(), next);
+            if (node.get_greater_child() != nullptr) node.req(node.get_greater_child(), next);
+            break;
         }
     }
 

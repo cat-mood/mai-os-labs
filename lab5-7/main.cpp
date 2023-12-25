@@ -43,6 +43,9 @@ int main() {
             }
             std::cout << std::endl;
         } else if (cmd == "q") {
+            MyMessage msg;
+            msg.type = MessageType::shutdown;
+            ctrl.send_message(msg);
             break;
         } else if (cmd == "exec") {
             int id;

@@ -129,7 +129,7 @@ MyMessage CalculatingNode::get_parent_msg() {
 	std::string buf;
 	_msg_to_string(msg_type, buf);
 	msg.type = (MessageType) std::stoi(buf);
-	if (msg.type == MessageType::ping) return msg;
+	if (msg.type == MessageType::ping || msg.type == MessageType::shutdown) return msg;
 	zmq::message_t msg_text;
 	res = _s_parent.recv(msg_text);
 	_msg_to_string(msg_text, buf);
