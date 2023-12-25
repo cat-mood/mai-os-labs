@@ -43,10 +43,6 @@ std::vector<int> KMPWeak(const std::string& text, const std::string& pattern) {
 	return ans;
 }
 
-std::vector<int> CalculatingNode::exec(const std::string& text, const std::string& pattern) {
-    return KMPWeak(text, pattern);
-}
-
 CalculatingNode::CalculatingNode(int id, int base_port) : 
 _id{id},
 _base_port{base_port},
@@ -177,4 +173,21 @@ int CalculatingNode::id() const {
 
 std::array<std::pair<int, zmq::socket_t*>, 2> CalculatingNode::children() const {
 	return _s_children;
+}
+
+std::string CalculatingNode::exec(const std::string& text, const std::string& pattern) {
+	std::vector<int> idxs = KMPWeak(text, pattern);
+	std::string res = "";
+	for (auto idx : idxs) {
+		res += std::to_string(idx) + ' ';
+	}
+	return res;
+}
+
+zmq::socket_t* CalculatingNode::get_less_child() const {
+	return _s_children[0].second;
+}
+
+zmq::socket_t* CalculatingNode::get_greater_child() const {
+	return _s_children[1].second;
 }

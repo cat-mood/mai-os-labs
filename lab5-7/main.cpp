@@ -44,6 +44,15 @@ int main() {
             std::cout << std::endl;
         } else if (cmd == "q") {
             break;
+        } else if (cmd == "exec") {
+            int id;
+            std::cin >> id;
+            std::string text_str, pattern_str;
+            std::cin >> text_str >> pattern_str;
+            std::string res = ctrl.exec(id, text_str, pattern_str);
+            std::cout << res << std::endl;
+        } else {
+            std::cout << "Wrong command!" << std::endl;
         }
     }
 

@@ -17,7 +17,7 @@ namespace mysys {
         ~ControlNode() noexcept;
         pid_t new_node(int id);
         std::vector<int> pingall();
-        void exec(int id, const std::string& text, const std::string& pattern);
+        std::string exec(int id, const std::string& text, const std::string& pattern);
         MyMessage get_message(zmq::recv_flags flags = zmq::recv_flags::none);
         bool send_message(const MyMessage& msg);
     private:

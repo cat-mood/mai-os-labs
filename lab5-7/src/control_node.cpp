@@ -106,3 +106,13 @@ std::vector<int> ControlNode::pingall() {
     }
     return tops;
 }
+
+std::string ControlNode::exec(int id, const std::string& text, const std::string& pattern) {
+    MyMessage msg;
+    msg.type = MessageType::exec;
+    msg.text = std::to_string(id) + ' ' + text + ' ' + pattern;
+    send_message(msg);
+    msg = get_message();
+    if (msg.type != MessageType::exec_result) throw std::runtime_error("Wrong message type");
+    return msg.text;
+}
