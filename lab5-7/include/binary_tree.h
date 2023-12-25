@@ -33,9 +33,6 @@ namespace mysys {
             return *this;
         }
 
-        void insert(T key) {
-            _root = _insert(_root, key);
-        }
 
         bool search(T key) const {
             _Node* found = _search(_root, key);
@@ -43,6 +40,11 @@ namespace mysys {
             if (found == nullptr) return false;
             
             return true;
+        }
+
+        void insert(T key) {
+            if (search(key)) throw std::logic_error("Already exists");
+            _root = _insert(_root, key);
         }
 
         // // delete the node with all its children
@@ -63,8 +65,13 @@ namespace mysys {
             if (found == nullptr) throw std::logic_error("Key not found");
             std::vector<T> tops;
             _get_tops(found, tops);
-            // tops.pop_back();
             return tops;
+        }
+
+        T get_parent(T key) {
+            _Node* found = _search_parent(_root, nullptr, key);
+            if (found == nullptr) return 0;
+            return found->key;
         }
 
     private:
@@ -127,6 +134,14 @@ namespace mysys {
                 return _search(root->right, key);
 
             return _search(root->left, key);
+        }
+
+        _Node* _search_parent(_Node* root, _Node* prev, int key) const {
+            if (root == nullptr || root->key == key)
+                return prev;
+            if (root->key < key)
+                return _search_parent(root->right, root, key);
+            return _search_parent(root->left, root, key);
         }
 
         void _get_tops(_Node* root, std::vector<T>& tops) {

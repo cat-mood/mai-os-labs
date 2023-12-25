@@ -24,7 +24,13 @@ int main() {
         if (cmd == "create") {
             int id;
             std::cin >> id;
-            pid_t pid = ctrl.new_node(id);
+            pid_t pid;
+            try {
+                pid = ctrl.new_node(id);
+            } catch (std::exception& e) {
+                std::cout << e.what() << std::endl;
+                continue;
+            }
             std::cout << "Ok: " << pid << std::endl;
         } else if (cmd == "pingall") {
             std::vector<int> ids = ctrl.pingall();
@@ -36,6 +42,8 @@ int main() {
                 std::cout << id << ";";
             }
             std::cout << std::endl;
+        } else if (cmd == "q") {
+            break;
         }
     }
 

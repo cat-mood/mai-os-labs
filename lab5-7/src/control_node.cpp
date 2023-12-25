@@ -21,8 +21,6 @@ void concat(std::vector<Item> &a, std::vector<Item> &b) {
 ControlNode::ControlNode(int base_port) : _base_port{base_port}, 
     _s_request(_context, zmq::socket_type::pair), _has_child{false} {
     _s_request.set(zmq::sockopt::sndtimeo, 3000);
-    file.open("control_log.txt");
-    file << "test\n";
 }
 
 ControlNode::ControlNode(ControlNode&& other) noexcept {
@@ -37,6 +35,7 @@ ControlNode::~ControlNode() noexcept {}
 pid_t ControlNode::new_node(int id) {
     if (id == 0) throw std::logic_error("id 0 is reserved for server");
     _topology.insert(id);
+    int parent = _topology.get_parent(id);
     pid_t pid = fork();
     if (pid == 0) {
         execl("./lab5-7_calc", "./lab5-7_calc", std::to_string(id).c_str(), std::to_string(_base_port).c_str());
@@ -48,7 +47,7 @@ pid_t ControlNode::new_node(int id) {
         } else {
             MyMessage bind;
             bind.type = MessageType::bind_node;
-            bind.text = std::to_string(id);
+            bind.text = std::to_string(parent) + " " + std::to_string(id);
             send_message(bind);
         }
         return pid;
@@ -69,15 +68,7 @@ MyMessage ControlNode::get_message(zmq::recv_flags flags) {
     MyMessage msg;
     std::string buf;
     zmq::message_t rec;
-    // _s_request.set(zmq::sockopt::rcvtimeo, 3000);
-    // std::cout << "DEBUG: " << _s_request.connected() << std::endl;
     auto res = _s_request.recv(rec, flags);
-    // _s_request.set(zmq::sockopt::rcvtimeo, -1);
-    // if (*res == 0 || errno == EAGAIN) {
-    //     msg.type == MessageType::error;
-    //     std::cout << "Meow" << std::endl;
-    //     return msg;
-    // }
     _msg_to_string(rec, buf);
     msg.type = (MessageType) std::stoi(buf);
     res = _s_request.recv(rec);
@@ -107,16 +98,7 @@ std::vector<int> ControlNode::pingall() {
         return ids;
     }
     msg = get_message();
-    // if (msg.type == MessageType::error) {
-    //     std::vector<int> ids = _topology.get_tops();
-    //     return ids;
-    // }
     std::vector<int> ids = _string_to_vector(msg.text);
-    for (auto id : ids) {
-        file << id << ' ';
-    }
-    file.close();
-    // if (ids[0] == -1 && ids.size() == 1) return ids;
     std::vector<int> tops;
     for (auto el : ids) {
         std::vector<int> children = _topology.get_children(el);

@@ -54,13 +54,8 @@ _s_parent(_context, zmq::socket_type::pair) {
 	_s_parent.set(zmq::sockopt::sndtimeo, 3000);
 	std::string addr = "tcp://localhost:" + std::to_string(_base_port + _id);
 	_s_parent.connect(addr);
-	std::string s;
-    s += "log";
-    s += std::to_string(_id);
-    s += ".txt";
-    file.open(s);
-    file << "test\n";
-	// file.close();
+	_s_children[0] = std::make_pair(-1, nullptr);
+	_s_children[1] = std::make_pair(-1, nullptr);
 }
 
 CalculatingNode::CalculatingNode(CalculatingNode&& other) noexcept {
@@ -72,8 +67,9 @@ CalculatingNode::CalculatingNode(CalculatingNode&& other) noexcept {
 }
 
 CalculatingNode::~CalculatingNode() noexcept {
-	for (auto& [id, child] : _s_children) {
-		delete child;
+	for (auto& p : _s_children) {
+		if (p.second == nullptr) continue;
+		delete p.second;
 	}
 }
 
@@ -82,11 +78,8 @@ bool CalculatingNode::req(zmq::socket_t* child, const MyMessage& msg) {
 	if (msg.type == MessageType::ping) {
 		auto res = child->send(message_type, zmq::send_flags::dontwait);
 		if (!res) {
-			// file << "Meow!\n";
-			// file.close();
 			return false;
 		}
-		// file.close();
 		return true;
 	}
 	auto res = child->send(message_type, zmq::send_flags::sndmore);
@@ -106,7 +99,11 @@ void CalculatingNode::connect_child(int child_id) {
 	zmq::socket_t* child = new zmq::socket_t(_context, zmq::socket_type::pair);
 	std::string addr = "tcp://*:" + std::to_string(_base_port + child_id);
 	child->bind(addr);
-	_s_children.insert(std::make_pair(child_id, child));
+	if (child_id < _id) {
+		_s_children[0] = std::make_pair(child_id, child);
+	} else {
+		_s_children[1] = std::make_pair(child_id, child);
+	}
 }
 
 void CalculatingNode::_msg_to_string(const zmq::message_t& msg, std::string& str) {
@@ -117,13 +114,7 @@ void CalculatingNode::_msg_to_string(const zmq::message_t& msg, std::string& str
 MyMessage CalculatingNode::get_child_msg(zmq::socket_t* child) {
 	MyMessage msg;
 	zmq::message_t msg_type;
-	// _s_parent.set(zmq::sockopt::rcvtimeo, 3000);
 	auto res = child->recv(msg_type);
-	// _s_parent.set(zmq::sockopt::rcvtimeo, -1);
-	// if (errno == EAGAIN) {
-	// 	msg.type = MessageType::error;
-	// 	return msg;
-	// }
 	std::string buf;
 	_msg_to_string(msg_type, buf);
 	msg.type = (MessageType) std::stoi(buf);
@@ -151,25 +142,39 @@ MyMessage CalculatingNode::get_parent_msg() {
 	return msg;
 }
 
+std::vector<int> CalculatingNode::_string_to_vector(const std::string& str) {
+    std::stringstream ss(str);
+    std::vector<int> vec;
+    int num;
+    while (ss >> num) {
+        vec.push_back(num);
+    }
+    return vec;
+}
+
 std::vector<int> CalculatingNode::ping_children() {
+	std::string s = "";
 	std::vector<int> ids;
-	MyMessage msg;
-	msg.type = MessageType::ping;
-	for (auto& [id, child] : _s_children) {
-		file << "in loop\n";
-		bool res = req(child, msg);
+	for (auto& p : _s_children) {
+		if (p.second == nullptr) continue;
+		MyMessage msg;
+		msg.type = MessageType::ping;
+		bool res = req(p.second, msg);
 		if (!res) {
-			file << "in cond\n";
-			ids.push_back(id);
+			s += std::to_string(p.first) + ' ';
 			continue;
 		}
-		msg = get_child_msg(child);
+		msg = get_child_msg(p.second);
+		s += msg.text + ' ';
 	}
-	for (auto id : ids) {
-		file << id << ' ';
-	}
-	file.close();
+	ids = _string_to_vector(s);
 	return ids;
 }
 
+int CalculatingNode::id() const {
+	return _id;
+}
 
+std::array<std::pair<int, zmq::socket_t*>, 2> CalculatingNode::children() const {
+	return _s_children;
+}

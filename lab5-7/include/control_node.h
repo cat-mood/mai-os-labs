@@ -27,8 +27,6 @@ namespace mysys {
         BinaryTree<int> _topology;
         bool _has_child;
 
-        std::ofstream file;
-
         std::vector<int> _string_to_vector(const std::string& str);
         void _msg_to_string(const zmq::message_t& msg, std::string& str);
     };

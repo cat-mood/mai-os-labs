@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <fstream>
+#include <array>
 #include "message_type.h"
 
 namespace mysys {
@@ -21,14 +21,15 @@ namespace mysys {
         std::vector<int> exec(const std::string& text, const std::string& pattern);
         bool req(zmq::socket_t* child, const MyMessage& msg);
         void reply(const MyMessage& msg);
+        int id() const;
+        std::array<std::pair<int, zmq::socket_t*>, 2> children() const;
+        std::vector<int> _string_to_vector(const std::string& str);
     private:
         zmq::context_t _context;
         zmq::socket_t _s_parent;     // like server (to parent)
-        std::map<int, zmq::socket_t*> _s_children;
+        std::array<std::pair<int, zmq::socket_t*>, 2> _s_children;
         int _base_port;
         int _id;
-
-        std::ofstream file;
 
         void _msg_to_string(const zmq::message_t& msg, std::string& str);
     };

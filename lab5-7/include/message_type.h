@@ -17,9 +17,4 @@ namespace mysys {
         MessageType type;
         std::string text;
     };
-
-    // void _msg_to_string(const zmq::message_t& msg, std::string& str) {
-	//     str.resize(msg.size() / sizeof(char));
-    //     std::memcpy(str.data(), msg.data(), msg.size());
-    // }
 }
