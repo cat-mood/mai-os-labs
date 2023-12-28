@@ -47,13 +47,6 @@ namespace mysys {
             _root = _insert(_root, key);
         }
 
-        // // delete the node with all its children
-        // void delete_node(T key) {
-        //     _Node* node = _search(_root, key);
-        //     if (node == nullptr) throw std::logic_error("Key not found");
-        //     _delete_tree(node);
-        // }
-
         std::vector<T> get_tops() {
             std::vector<T> tops;
             _get_tops(_root, tops);
