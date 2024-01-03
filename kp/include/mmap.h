@@ -9,8 +9,6 @@
 #include <string>
 
 namespace bc {
-    const int MAX_LENGHT = 10000;
-
     enum ModeFlags {
         read = PROT_READ,
         write = PROT_WRITE,
@@ -38,7 +36,7 @@ namespace bc {
     template <class T>
     MemoryMap<T>::MemoryMap(const std::string& name, size_t size, int mode) : _name{name}, _size{size} {
         _fd = shm_open(name.c_str(), O_CREAT | O_RDWR, S_IREAD | S_IWRITE);
-        if (ftruncate(_fd, size) != 0) {
+        if (ftruncate(_fd, sizeof(T) * size) != 0) {
             throw std::runtime_error("ftruncate error");
         }
         if (_fd == -1) {
