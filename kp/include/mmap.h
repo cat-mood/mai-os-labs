@@ -23,9 +23,10 @@ namespace bc {
         MemoryMap(const std::string& s, size_t size, int mode);
         void delete_shm_file();
         ~MemoryMap();
-        T* data() noexcept;
-        size_t size() noexcept;
+        T* data() const noexcept;
+        size_t size() const noexcept;
         T& operator[](int idx);
+        const T& operator[](int idx) const;
     private:
         T* _data;
         int _fd;
@@ -62,12 +63,12 @@ namespace bc {
     }
 
     template <class T>
-    T* MemoryMap<T>::data() noexcept {
+    T* MemoryMap<T>::data() const noexcept {
         return _data;
     }
 
     template <class T>
-    size_t MemoryMap<T>::size() noexcept {
+    size_t MemoryMap<T>::size() const noexcept {
         return _size;
     }
 
@@ -77,5 +78,33 @@ namespace bc {
             throw std::range_error("out of range");
         }
         return _data[idx];
+    }
+
+    template <class T>
+    const T& MemoryMap<T>::operator[](int idx) const {
+        if (idx > _size - 1) {
+            throw std::range_error("out of range");
+        }
+        return _data[idx];
+    }
+
+    template <class T>
+    void str_to_mmap(const std::string& str, MemoryMap<T>& mmap, int start_idx) {
+        if (mmap.size() - start_idx < str.size()) throw std::logic_error("string is too long");
+        for (int i = start_idx; i < str.size(); ++i) {
+            mmap[i] = str[i];
+        }
+        mmap[start_idx + str.size()] = '\0';
+    }
+
+    template <class T>
+    std::string mmap_to_str(const MemoryMap<T>& mmap, int start_idx) {
+        std::string str(mmap.size() - start_idx, ' ');
+        int i = start_idx;
+        while (mmap[i] != '\0') {
+            str[i] = mmap[i];
+            ++i;
+        }
+        return str;
     }
 }   // bulls & cows
