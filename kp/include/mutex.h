@@ -6,8 +6,6 @@
 
 /* This is my process-shared mutex */
 
-// maybe i should add robust for ping server/client in future (i'm not sure that it's working as i think)
-
 namespace bc {
     enum MutexFlag {
         create,

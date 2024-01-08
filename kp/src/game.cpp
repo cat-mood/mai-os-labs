@@ -9,11 +9,11 @@ _db{db_name, std::ios::binary | std::ios::in},
 _players{players},
 _winner_id{0} {
     if (!_db.good()) throw std::runtime_error("Can't open database file");
+    _db.read(reinterpret_cast<char*>(&_words), sizeof(int));
+    _word = _generate_word();
     for (char letter : _word) {
         _letters.insert(letter);
     }
-    _db.read(reinterpret_cast<char*>(&_words), sizeof(int));
-    _word = _generate_word();
 }
 
 Game::~Game() noexcept {
