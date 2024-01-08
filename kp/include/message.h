@@ -6,8 +6,11 @@ namespace bc {
     enum MessageType {
         wait,
         server_create_game,
-        game_connect,
-        game_check
+        ping,
+        start_round,
+        end_game,
+        guess,
+        ans_guess
     };
 
     struct Message {

@@ -22,8 +22,10 @@ void Client::create_game(const std::string& game_name, int players) {
 }
 
 void Client::connect_to_game(const std::string& game_name) {
-    _mmap = MemoryMap<char>("bcgame_" + game_name + "_mmap", _mmap_size, ModeFlags::read | ModeFlags::write);
-    _mtx = Mutex("bcgame_" + game_name + "_mutex", MutexFlag::connect);
+    MemoryMap<char> mmap("bcgame_" + game_name + "_mmap", _mmap_size, ModeFlags::read | ModeFlags::write);
+    _mmap = mmap;
+    Mutex mtx("bcgame_" + game_name + "_mutex", MutexFlag::connect);
+    _mtx = mtx;
 }
 
 void Client::send_message(const Message& msg) {
@@ -40,4 +42,28 @@ Message Client::get_message() {
     msg.data = mmap_to_str(_mmap, 1);
     _mtx.unlock();
     return msg;
+}
+
+bool Client::ping() {
+    Message msg;
+    msg.type = MessageType::ping;
+    msg.data = "ping";
+    send_message(msg);
+    msg = get_message();
+    int attempts = 0;
+    while (msg.type == MessageType::ping) {
+        ++attempts;
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        msg = get_message();
+        if (attempts == 20) break;
+    }
+    if (msg.type == MessageType::wait || msg.type == MessageType::start_round) return true;
+    return false;
+}
+
+void Client::clear_mmap() {
+    _mtx.lock();
+    _mmap[0] = MessageType::wait;
+    _mmap[1] = '\0';
+    _mtx.unlock();
 }

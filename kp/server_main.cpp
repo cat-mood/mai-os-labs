@@ -16,7 +16,6 @@ void routine(Server& ser) {
                 break;
             }
             case MessageType::server_create_game: {
-                std::cout << "meow create" << std::endl;
                 std::istringstream oss(msg.data);
                 std::string game_name;
                 int players;
@@ -26,8 +25,12 @@ void routine(Server& ser) {
                 } catch (std::exception& ex) {
                     std::cout << "Error: " << ex.what() << std::endl;
                 }
+                std::cout << "Game \"" << game_name << "\" has been created" << std::endl;
                 ser.clear_mmap();
-                std::cout << "meow clear" << std::endl;
+                break;
+            }
+            case MessageType::ping: {
+                ser.clear_mmap();
                 break;
             }
         }

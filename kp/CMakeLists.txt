@@ -16,6 +16,7 @@ add_library(${PROJECT_NAME}_lib ${SOURCES})
 add_executable(${PROJECT_NAME}_server server_main.cpp)
 add_executable(${PROJECT_NAME}_client client_main.cpp)
 add_executable(${PROJECT_NAME}_game game_main.cpp)
+add_executable(${PROJECT_NAME}_make_db make_db.cpp)
 
 target_include_directories(${PROJECT_NAME}_lib PRIVATE ${INCLUDE_DIR})
 target_link_libraries(${PROJECT_NAME}_server PRIVATE ${PROJECT_NAME}_lib pthread)

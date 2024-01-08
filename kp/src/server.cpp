@@ -52,5 +52,6 @@ Message Server::get_message() {
 void Server::clear_mmap() {
     _mtx.lock();
     _mmap[0] = MessageType::wait;
+    _mmap[1] = '\0';
     _mtx.unlock();
 }

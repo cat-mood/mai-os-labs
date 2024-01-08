@@ -11,8 +11,24 @@ Mutex::Mutex(const std::string& name, MutexFlag flag) : _name{name}, _mtx(name, 
     }
 }
 
+Mutex::Mutex(const Mutex& other) : _name{other._name}, _mtx{other._mtx} {}
+
+Mutex::Mutex(Mutex&& other) noexcept : _name{std::move(other._name)}, _mtx{std::move(other._mtx)} {}
+
 Mutex::~Mutex() noexcept {
     // there is no memory leak because of destructor of bc::MemoryMap
+}
+
+Mutex& Mutex::operator=(const Mutex& other) {
+    _name = other._name;
+    _mtx = other._mtx;
+    return *this;
+}
+
+Mutex& Mutex::operator=(Mutex&& other) noexcept {
+    _name = std::move(other._name);
+    _mtx = std::move(other._mtx);
+    return *this;
 }
 
 void Mutex::lock() {

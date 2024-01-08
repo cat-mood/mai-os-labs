@@ -20,8 +20,11 @@ namespace bc {
         MemoryMap<pthread_mutex_t> _mtx;
     public:
         Mutex(const std::string& name, MutexFlag flag);
-        Mutex(const Mutex& other) = delete;
+        Mutex(const Mutex& other);
+        Mutex(Mutex&& other) noexcept;
         ~Mutex() noexcept;
+        Mutex& operator=(const Mutex& other);
+        Mutex& operator=(Mutex&& other) noexcept;
         void lock();
         void unlock();
         const std::string& name() const;

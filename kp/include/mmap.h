@@ -23,19 +23,25 @@ namespace bc {
         MemoryMap(const std::string& s, size_t size, int mode);
         void delete_shm_file();
         ~MemoryMap();
+        MemoryMap(const MemoryMap<T>& other);
+        MemoryMap(MemoryMap<T>&& other) noexcept;
+        MemoryMap<T>& operator=(const MemoryMap<T>& other);
+        MemoryMap<T>& operator=(MemoryMap<T>&& other) noexcept;
         T* data() const noexcept;
         size_t size() const noexcept;
         T& operator[](int idx);
         const T& operator[](int idx) const;
+        const std::string& name() const;
     private:
         T* _data;
         int _fd;
         std::string _name;
         size_t _size;
+        int _mode;
     };
 
     template <class T>
-    MemoryMap<T>::MemoryMap(const std::string& name, size_t size, int mode) : _name{name}, _size{size} {
+    MemoryMap<T>::MemoryMap(const std::string& name, size_t size, int mode) : _name{name}, _size{size}, _mode{mode} {
         _fd = shm_open(name.c_str(), O_CREAT | O_RDWR, S_IREAD | S_IWRITE);
         if (ftruncate(_fd, sizeof(T) * size) != 0) {
             throw std::runtime_error("ftruncate error");
@@ -60,6 +66,47 @@ namespace bc {
     template <class T>
     MemoryMap<T>::~MemoryMap() {
         munmap(_data, _size);
+    }
+
+    template <class T>
+    MemoryMap<T>::MemoryMap(const MemoryMap<T>& other) :
+    MemoryMap<T>(other._name, other._size, other._mode) {}
+
+    template <class T>
+    MemoryMap<T>::MemoryMap(MemoryMap<T>&& other) noexcept : 
+    _data{other._data},
+    _fd{std::move(other._fd)},
+    _name{std::move(other._name)},
+    _size{std::move(other._size)},
+    _mode{std::move(other._mode)} {}
+
+    template <class T>
+    MemoryMap<T>& MemoryMap<T>::operator=(const MemoryMap<T>& other) {
+        _name = other._name;
+        _size = other._size;
+        _mode = other._mode;
+        _fd = shm_open(_name.c_str(), O_CREAT | O_RDWR, S_IREAD | S_IWRITE);
+        if (ftruncate(_fd, sizeof(T) * _size) != 0) {
+            throw std::runtime_error("ftruncate error");
+        }
+        if (_fd == -1) {
+            throw std::runtime_error("shm_open error");
+        }
+        _data = (T*) mmap(NULL, _size, other._mode, MAP_SHARED, _fd, 0);
+        if (_data == MAP_FAILED) {
+            throw std::runtime_error("mmap error");
+        }
+        return *this;
+    }
+
+    template <class T>
+    MemoryMap<T>& MemoryMap<T>::operator=(MemoryMap<T>&& other) noexcept {
+        _data = other._data;
+        _fd = std::move(other._fd);
+        _name = std::move(other._name);
+        _size = std::move(other._size);
+        _mode = std::move(other._mode);
+        return *this;
     }
 
     template <class T>
@@ -89,10 +136,17 @@ namespace bc {
     }
 
     template <class T>
+    const std::string& MemoryMap<T>::name() const {
+        return _name;
+    }
+
+    template <class T>
     void str_to_mmap(const std::string& str, MemoryMap<T>& mmap, int start_idx) {
-        if (mmap.size() - start_idx < str.size()) throw std::logic_error("string is too long");
-        for (int i = start_idx; i < str.size(); ++i) {
-            mmap[i] = str[i];
+        if ((mmap.size() - start_idx) < str.size()) throw std::logic_error("string is too long");
+        int j = start_idx;
+        for (int i = 0; i < str.size(); ++i) {
+            mmap[j] = str[i];
+            ++j;
         }
         mmap[start_idx + str.size()] = '\0';
     }
@@ -101,9 +155,11 @@ namespace bc {
     std::string mmap_to_str(const MemoryMap<T>& mmap, int start_idx) {
         std::string str(mmap.size() - start_idx, ' ');
         int i = start_idx;
+        int j = 0;
         while (mmap[i] != '\0') {
-            str[i] = mmap[i];
+            str[j] = mmap[i];
             ++i;
+            ++j;
         }
         return str;
     }
