@@ -15,7 +15,8 @@ void routine(Game& game) {
     int attempts = 0;
     Message msg;
     bool is_game_ended = false;
-    while (!is_game_ended) {
+    bool while_cond = true;
+    while (while_cond) {
         msg = game.get_message();
         switch (msg.type) {
             case MessageType::wait: {
@@ -23,6 +24,10 @@ void routine(Game& game) {
                 ++attempts;
                 if (attempts > 30) --game.players();
                 if (players == game.players()) {
+                    if (is_game_ended)  {
+                        while_cond = false;
+                        break;
+                    }
                     Message call;
                     call.type = MessageType::start_round;
                     call.data = "";

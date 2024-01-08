@@ -100,7 +100,7 @@ std::string Game::check_word(const std::string& word, int player_id) {
             str_cows += ' ';
         }
     }
-    if (bulls == _word.size()) {
+    if (bulls == _word.size() && _winner_id == 0) {
         _winner_id = player_id;
     }
     std::string ans = std::to_string(cows) + ' ' + str_cows + ' ' + std::to_string(bulls) + str_bulls;
