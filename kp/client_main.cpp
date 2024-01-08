@@ -118,6 +118,7 @@ void interface(Client& cl) {
                 }
                 cl.connect_to_game(game_name);
                 game(cl);
+                cl.connect_to_server();
                 break;
             }
             case '2': {
@@ -126,6 +127,7 @@ void interface(Client& cl) {
                 std::cin >> game_name;
                 cl.connect_to_game(game_name);
                 game(cl);
+                cl.connect_to_server();
                 break;
             }
             case 'q': {

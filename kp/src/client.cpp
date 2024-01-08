@@ -2,7 +2,7 @@
 
 using namespace bc;
 
-Client::Client(int server_id) : _id{getpid()}, 
+Client::Client(int server_id) : _id{getpid()}, _server_id{server_id}, 
 _mmap("bc_" + std::to_string(server_id) + "_mmap", _mmap_size, ModeFlags::read | ModeFlags::write),
 _mtx("bc_" + std::to_string(server_id) + "_mutex", MutexFlag::connect) {}
 
@@ -25,6 +25,13 @@ void Client::connect_to_game(const std::string& game_name) {
     MemoryMap<char> mmap("bcgame_" + game_name + "_mmap", _mmap_size, ModeFlags::read | ModeFlags::write);
     _mmap = mmap;
     Mutex mtx("bcgame_" + game_name + "_mutex", MutexFlag::connect);
+    _mtx = mtx;
+}
+
+void Client::connect_to_server() {
+    MemoryMap<char> mmap("bc_" + std::to_string(_server_id) + "_mmap", _mmap_size, ModeFlags::read | ModeFlags::write);
+    _mmap = mmap;
+    Mutex mtx("bc_" + std::to_string(_server_id) + "_mutex", MutexFlag::connect);
     _mtx = mtx;
 }
 
